@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './TicketList.module.css';
+import { useAuth } from '../context/AuthContext';
 
 const API_BASE = '/api';
 
@@ -35,6 +36,8 @@ export default function TicketList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const { user } = useAuth();
 
   const query = searchQuery.trim().toLowerCase();
   const filteredTickets = query
@@ -49,10 +52,11 @@ export default function TicketList() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${API_BASE}/tickets`);
+      const res = await fetch(`${API_BASE}/tickets`, { credentials: 'include' });
       if (!res.ok) throw new Error('Không tải được danh sách');
       const data = await res.json();
       setTickets(data);
+      setSelectedIds(new Set());
     } catch (err) {
       setError(err.message);
     } finally {
@@ -72,7 +76,7 @@ export default function TicketList() {
 
   const handleDownload = async (id, name, employeeId) => {
     try {
-      const res = await fetch(`${API_BASE}/tickets/${id}/export`);
+      const res = await fetch(`${API_BASE}/tickets/${id}/export`, { credentials: 'include' });
       if (!res.ok) throw new Error('Export thất bại');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -81,6 +85,64 @@ export default function TicketList() {
       a.download = `Offboard checklist - ${name} ${employeeId}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    const filteredIds = filteredTickets.map((t) => t.id);
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const allSelected = filteredIds.every((id) => next.has(id));
+      if (allSelected) {
+        filteredIds.forEach((id) => next.delete(id));
+      } else {
+        filteredIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const handleDelete = async (ticket) => {
+    const label = `Offboard checklist - ${ticket.employee_name} ${ticket.employee_id}`;
+    if (!window.confirm(`Xóa ticket này?\n${label}`)) return;
+    try {
+      const res = await fetch(`${API_BASE}/tickets/${ticket.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Xóa thất bại');
+      await fetchTickets();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (!window.confirm(`Xóa ${ids.length} ticket đã chọn?`)) return;
+    try {
+      const res = await fetch(`${API_BASE}/tickets/bulk-delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ ids }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Xóa hàng loạt thất bại');
+      await fetchTickets();
     } catch (err) {
       alert(err.message);
     }
@@ -116,12 +178,35 @@ export default function TicketList() {
             aria-label="Tìm kiếm theo họ tên hoặc ID"
           />
         </div>
+        {user && (
+          <button
+            type="button"
+            className={styles.bulkDeleteBtn}
+            onClick={handleBulkDelete}
+            disabled={selectedIds.size === 0}
+          >
+            Xóa {selectedIds.size} ticket
+          </button>
+        )}
         <span className={styles.count}>{filteredTickets.length} ticket</span>
       </div>
       <div className={styles.tableWrap}>
         <table className={styles.table}>
           <thead>
             <tr>
+              {user && (
+                <th className={styles.colSelect}>
+                  <input
+                    type="checkbox"
+                    onChange={toggleSelectAll}
+                    checked={
+                      filteredTickets.length > 0 &&
+                      filteredTickets.every((t) => selectedIds.has(t.id))
+                    }
+                    aria-label="Chọn tất cả ticket"
+                  />
+                </th>
+              )}
               <th>Ticket</th>
               <th>Ngày tạo</th>
               <th>Người tạo</th>
@@ -133,14 +218,23 @@ export default function TicketList() {
           <tbody>
             {filteredTickets.length === 0 ? (
               <tr>
-                <td colSpan={6} className={styles.empty}>
+                <td colSpan={user ? 7 : 6} className={styles.empty}>
                   {tickets.length === 0
                     ? 'Chưa có ticket nào. Nhấn '
                     : 'Không tìm thấy ticket nào phù hợp với từ khóa tìm kiếm.'}
                   {tickets.length === 0 && (
                     <>
-                      <strong>Tạo ticket Offboard</strong>
-                      {' trên header để tạo.'}
+                      {user ? (
+                        <>
+                          <strong>Tạo ticket Offboard</strong>
+                          {' trên header để tạo.'}
+                        </>
+                      ) : (
+                        <>
+                          <strong>Admin login</strong>
+                          {' để tạo ticket mới.'}
+                        </>
+                      )}
                     </>
                   )}
                 </td>
@@ -148,6 +242,16 @@ export default function TicketList() {
             ) : (
               filteredTickets.map((t) => (
                 <tr key={t.id}>
+                  {user && (
+                    <td className={styles.colSelect}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(t.id)}
+                        onChange={() => toggleSelect(t.id)}
+                        aria-label={`Chọn ticket ${t.employee_name}`}
+                      />
+                    </td>
+                  )}
                   <td>
                     <Link to={`/ticket/${t.id}`} className={styles.ticketName}>
                       Offboard checklist - {t.employee_name} {t.employee_id}
@@ -172,6 +276,15 @@ export default function TicketList() {
                     >
                       Tải .xlsx
                     </button>
+                    {user && (
+                      <button
+                        type="button"
+                        className={styles.btnDelete}
+                        onClick={() => handleDelete(t)}
+                      >
+                        Xóa
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))

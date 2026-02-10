@@ -14,7 +14,6 @@ export default function CreateTicketModal({ open, onClose, onCreated, apiBase })
     manager: '',
     last_working_day: '',
     status: 'Chưa thực hiện',
-    created_by: '',
   });
 
   const handleChange = (e) => {
@@ -30,11 +29,11 @@ export default function CreateTicketModal({ open, onClose, onCreated, apiBase })
       const payload = {
         ...form,
         last_working_day: form.last_working_day || null,
-        created_by: form.created_by || null,
       };
       const res = await fetch(`${apiBase}/tickets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
       const data = await res.json();
@@ -48,7 +47,6 @@ export default function CreateTicketModal({ open, onClose, onCreated, apiBase })
         manager: '',
         last_working_day: '',
         status: 'Chưa thực hiện',
-        created_by: '',
       });
     } catch (err) {
       setError(err.message);
@@ -140,16 +138,6 @@ export default function CreateTicketModal({ open, onClose, onCreated, apiBase })
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
-            </label>
-            <label>
-              <span className={styles.labelText}>Người tạo</span>
-              <input
-                type="text"
-                name="created_by"
-                value={form.created_by}
-                onChange={handleChange}
-                placeholder="Tên người tạo ticket"
-              />
             </label>
           </div>
           <div className={styles.actions}>

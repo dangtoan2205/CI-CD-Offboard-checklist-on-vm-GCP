@@ -48,3 +48,66 @@
 .createBtn:hover {
   background: var(--primary-hover);
 }
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.navLink {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.navLink:hover {
+  text-decoration: none;
+  background: #b8f3ec;
+}
+
+.userBox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.userName {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.logoutBtn {
+  border: none;
+  background: transparent;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.logoutBtn:hover {
+  text-decoration: underline;
+}
+
+.loginLink {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.loginLink:hover {
+  text-decoration: none;
+  background: var(--bg);
+}

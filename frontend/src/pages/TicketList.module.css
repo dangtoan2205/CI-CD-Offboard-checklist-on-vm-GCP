@@ -12,6 +12,7 @@
   gap: 16px;
   padding: 20px 24px;
   border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
 }
 
 .title {
@@ -52,6 +53,21 @@
   flex-shrink: 0;
 }
 
+.bulkDeleteBtn {
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #fecaca;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.bulkDeleteBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .tableWrap {
   overflow-x: auto;
 }
@@ -76,6 +92,11 @@
 .table td {
   padding: 16px 20px;
   border-top: 1px solid var(--border);
+}
+
+.colSelect {
+  width: 44px;
+  text-align: center;
 }
 
 .table tbody tr:hover {
@@ -150,6 +171,21 @@
 
 .btnDownload:hover {
   background: var(--bg);
+}
+
+.btnDelete {
+  padding: 6px 12px;
+  border: 1px solid #fecaca;
+  background: #fee2e2;
+  color: #b91c1c;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.btnDelete:hover {
+  background: #fecaca;
 }
 
 .empty {

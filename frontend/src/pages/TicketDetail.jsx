@@ -46,7 +46,7 @@ export default function TicketDetail() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${API_BASE}/tickets/${id}`);
+      const res = await fetch(`${API_BASE}/tickets/${id}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Không tải được ticket');
       const data = await res.json();
       setTicket(data);
@@ -80,6 +80,7 @@ export default function TicketDetail() {
       const res = await fetch(`${API_BASE}/tickets/${id}/checklist/${editingItem}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           status: editForm.status,
           completed_at: editForm.completed_at || null,
@@ -97,7 +98,7 @@ export default function TicketDetail() {
   const handleDownload = async () => {
     if (!ticket) return;
     try {
-      const res = await fetch(`${API_BASE}/tickets/${id}/export`);
+      const res = await fetch(`${API_BASE}/tickets/${id}/export`, { credentials: 'include' });
       if (!res.ok) throw new Error('Export thất bại');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -137,6 +138,7 @@ export default function TicketDetail() {
       const res = await fetch(`${API_BASE}/tickets/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Cập nhật thông tin thất bại');
@@ -188,6 +190,7 @@ export default function TicketDetail() {
       const res = await fetch(`${API_BASE}/tickets/${id}/checklist/bulk`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Cập nhật hàng loạt thất bại');
@@ -199,6 +202,7 @@ export default function TicketDetail() {
       setBulkSaving(false);
     }
   };
+
 
   if (loading) return <div className={styles.loading}>Đang tải...</div>;
   if (error) return <div className={styles.error}>{error}</div>;

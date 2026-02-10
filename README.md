@@ -22,6 +22,13 @@
 docker-compose up -d --build
 ```
 
+Sau khi các container đã chạy, nếu thấy lỗi thiếu bảng dữ liệu, chạy thêm:
+
+```bash
+cd backend
+npm run db:init
+```
+
 - **Frontend:** http://localhost:3000  
 - **Backend API:** http://localhost:4000  
 - **PostgreSQL:** localhost:5432 (database `offboard_checklist`, user `postgres`, password `password`)
@@ -35,6 +42,19 @@ docker-compose up -d db
 Giữ container `db` chạy khi bạn chạy `npm run dev` cho backend/frontend. Nếu tắt Docker (hoặc chỉ tắt `db`), backend sẽ không kết nối được DB và `npm run db:init` sẽ báo ECONNREFUSED. Khi DB bị ngắt giữa chừng, backend đã được cấu hình để không crash (chỉ log lỗi); khởi động lại DB rồi gửi request lại là được.
 
 PostgreSQL chạy tại `localhost:5432`, khớp với `backend/.env.example`.
+
+**Lỗi sai mật khẩu PostgreSQL (password authentication failed):**
+
+Nếu log có dòng `FATAL:  password authentication failed for user "postgres"`, nghĩa là container Postgres đang dùng mật khẩu khác với `POSTGRES_PASSWORD`/`DATABASE_URL` hiện tại. Cách xử lý nhanh:
+
+- Nếu không cần dữ liệu cũ: dừng và xóa volume, rồi chạy lại.
+
+```bash
+docker compose down -v
+docker compose up -d db
+```
+
+- Nếu muốn giữ dữ liệu: cập nhật `POSTGRES_PASSWORD` trong [docker-compose.yml](docker-compose.yml) và `DATABASE_URL` trong `backend/.env` cho khớp với mật khẩu đã tạo trước đó.
 
 Nếu dùng PostgreSQL cài sẵn trên máy, tạo database:
 

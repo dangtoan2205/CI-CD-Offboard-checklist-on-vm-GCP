@@ -3,6 +3,7 @@ const router = express.Router();
 const { pool } = require('../db/config');
 const checklistTemplate = require('../db/checklistTemplate');
 const XLSX = require('xlsx');
+const requireAdmin = require('../middleware/requireAdmin');
 
 // Compute ticket status from checklist: all Hoàn thành -> Hoàn thành; any in progress -> Đang thực hiện; else Chưa thực hiện
 async function computeTicketStatusFromChecklist(ticketId) {
@@ -33,6 +34,24 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Bulk delete tickets
+router.post('/bulk-delete', requireAdmin, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'ids must be a non-empty array' });
+    }
+    const placeholders = ids.map((_, i) => `$${i + 1}`).join(',');
+    const { rowCount } = await pool.query(
+      `DELETE FROM tickets WHERE id IN (${placeholders})`,
+      ids
+    );
+    return res.json({ deleted: rowCount });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // Get one ticket with checklist items
 router.get('/:id', async (req, res) => {
   try {
@@ -58,7 +77,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create ticket (with checklist from template)
-router.post('/', async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
   const client = await pool.connect();
   try {
     const {
@@ -69,7 +88,6 @@ router.post('/', async (req, res) => {
       manager,
       last_working_day,
       status = 'Chưa thực hiện',
-      created_by,
     } = req.body;
     if (!employee_name || !employee_id || !email) {
       return res.status(400).json({ error: 'employee_name, employee_id, email are required' });
@@ -78,7 +96,16 @@ router.post('/', async (req, res) => {
       `INSERT INTO tickets (employee_name, employee_id, email, position, manager, last_working_day, status, created_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [employee_name, employee_id, email, position || null, manager || null, last_working_day || null, status, created_by || null]
+      [
+        employee_name,
+        employee_id,
+        email,
+        position || null,
+        manager || null,
+        last_working_day || null,
+        status,
+        req.session.user.name || req.session.user.email,
+      ]
     );
     const ticket = ticketRes.rows[0];
     let sortOrder = 0;
@@ -125,6 +152,18 @@ router.patch('/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete ticket
+router.delete('/:id', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rowCount } = await pool.query('DELETE FROM tickets WHERE id = $1', [id]);
+    if (rowCount === 0) return res.status(404).json({ error: 'Ticket not found' });
+    return res.json({ ok: true });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
   }
 });
 
